@@ -92,7 +92,7 @@ if __name__ == '__main__':
     parser.add_argument('infile', help='path to text file containing URLs')
     parser.add_argument('outfile', nargs='?', default=os.path.join(os.path.expanduser('~'), 'Desktop/outfile'),
                         help='path to output destination (default: ~/Desktop/outfile)')
-    parser.add_argument('-s', '--slep', type=int, metavar='TIME', default=0,
+    parser.add_argument('-s', '--sleep', type=int, metavar='TIME', default=0,
                         help='time in seconds to delay between each target')
     parser.add_argument('-t', '--timeout', type=int, metavar='TIME', default=None,
                         help='time in seconds to wait before giving up on a host')
