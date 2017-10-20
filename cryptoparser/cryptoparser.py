@@ -1,7 +1,7 @@
 #!/usr/bin/env python3.6
 
 __date__ = '2017-10-19'
-__version__ = (0,0,4)
+__version__ = (0,0,5)
 
 # Standard Library.
 import argparse # ArgumentParser
@@ -51,6 +51,7 @@ def getsource(url, cache='~/Desktop/http_cache', timeout=None):
     #if not url.startswith('http'): url = ''.join(['http://', url])
     try:
         response, content = httplib2.Http(cache, timeout).request(url.strip())
+        if response.status is not '200': return
         return content.decode('utf-8')
     except (ConnectionRefusedError, TimeoutError): #noqa Socket still in use?.
         return
