@@ -51,10 +51,10 @@ def getsource(url, cache='~/Desktop/http_cache', timeout=None):
     #if not url.startswith('http'): url = ''.join(['http://', url])
     try:
         response, content = httplib2.Http(cache, timeout).request(url.strip())
-        if response.status is not '200': return
-        return content.decode('utf-8')
-    except (ConnectionRefusedError, TimeoutError): #noqa Socket still in use?.
-        return
+        if response.status is 200:
+            return content.decode('utf-8')
+    #(ConnectionRefusedError, TimeoutError): #noqa Socket still in use?.
+    except: return
 
 def parsecontent(content):
     """Return a string if the pattern: CoinHive.Anonymous('HASH');
