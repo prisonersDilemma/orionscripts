@@ -114,6 +114,6 @@ if __name__ == '__main__':
             output = '{},{}\n'.format(thedomain,thehash)
             if not args.quietmode: sys.stdout.write(output)
             outfile.write(output)
-            time.sleep(args.throttle)
+            time.sleep(args.sleep)
     shutil.rmtree(cache) # Delete the cache+contents.
     if not args.quietmode: sys.stdout.write('Done.\n')
