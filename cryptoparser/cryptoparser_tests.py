@@ -1,5 +1,7 @@
 #!/usr/bin/env python3.6
 
+# $ python -m unittest cryptoparser_tests.py
+
 import unittest
 
 import cryptoparser
@@ -21,6 +23,22 @@ class RegexTestCase(unittest.TestCase):
             'oZFH0SLOx5v0DuQug1dqDykUWYnfbEgq')
         thehash = cryptoparser.parsecontent(None) if cryptoparser.parsecontent(None) else 0
         self.assertEqual(thehash, 0)
+        self.assertEqual(cryptoparser.parsecontent(
+"""miner = new CoinHive.Anonymous('8nZ6lEbgaSJd7c977LBLcLBO2sX43tb2');"""),
+        '8nZ6lEbgaSJd7c977LBLcLBO2sX43tb2')
+        self.assertEqual(cryptoparser.parsecontent(
+"""/
+<script src="https://coin-hive.com/lib/coinhive.min.js"></script>
+<script>
+	var miner = new CoinHive.Anonymous('8nZ6lEbgaSJd7c977LBLcLBO2sX43tb2');
+	miner.start();
+</script>
+  <script>
+    alert( 'Hello, world!' );
+  </script>
+Hello
+"""), '8nZ6lEbgaSJd7c977LBLcLBO2sX43tb2')
+
 
     def test_qualifyurl(self):
         self.assertEqual(
@@ -32,6 +50,14 @@ class RegexTestCase(unittest.TestCase):
         self.assertNotEqual(
             [url for url in cryptoparser.qualifyurl('dailystormer.ph')],
             ['https://dailystormer.com',])
+
+
+    #def test_requesttimeout(self):
+    #    # Assume the localhost is not running a webserver, and
+    #    # run main on it, and the output should be: localhost,-1,
+    #    # which will be printed to the screen, along with Done.,
+    #    # and written to ~/Desktop/outfile.
+    #    self.assertEqual()
 
     # Testing.
     #domains = ['badpackets.net'] * 3

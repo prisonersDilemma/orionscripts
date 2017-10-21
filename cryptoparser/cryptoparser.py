@@ -54,7 +54,8 @@ def getsource(url, cache='~/Desktop/http_cache', timeout=None):
         if response.status is 200:
             return content.decode('utf-8')
     #(ConnectionRefusedError, TimeoutError): #noqa Socket still in use?.
-    except: return
+    except:
+        return -1
 
 def parsecontent(content):
     """Return a string if the pattern: CoinHive.Anonymous('HASH');
@@ -84,21 +85,32 @@ def splitdomain(url):
     try: return domainstring(url).group('addr')
     except AttributeError: return url
 
-def qualifyurl(domainname):
+def qualifyurl(domainname, **kwargs):
+    """Return a generator, which is an iterable of *thedomainname* prefixed with
+    http:// and https://.
+    """
+    if kwargs['http_only']:
+        return ['://'.join(('http', domainname))]
+    elif kwargs['https_only']:
+        return ['://'.join(('https', domainname))]
     return ('://'.join((schema,domainname)) for schema in ('http', 'https'))
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='', description='')
+    #parser.add_argument('-d', '--dry-run', action='store_true',
+    #                    help='print inputs instead of making requests' )
+    parser.add_argument('--http-only', action='store_true', help='only request to http://')
+    parser.add_argument('--https-only', action='store_true', help='only request to https://')
     parser.add_argument('infile', help='path to text file containing URLs')
     parser.add_argument('outfile', nargs='?', default=os.path.join(os.path.expanduser('~'), 'Desktop/outfile'),
                         help='path to output destination (default: ~/Desktop/outfile)')
+    parser.add_argument('-q', '--quiet-mode', dest='quietmode', action='store_true',
+                        help='do not print output to stdout')
     parser.add_argument('-s', '--sleep', type=int, metavar='TIME', default=0,
                         help='time in seconds to delay between each target')
     parser.add_argument('-t', '--timeout', type=int, metavar='TIME', default=None,
                         help='time in seconds to wait before giving up on a host')
-    parser.add_argument('-q', '--quiet-mode', dest='quietmode', action='store_true',
-                        help='do not print output to stdout')
     args = parser.parse_args()
 
 
@@ -108,10 +120,15 @@ if __name__ == '__main__':
     with open(args.infile) as infile, open(args.outfile, 'a') as outfile:
         for url in [url.strip() for url in list(infile)]:
             thedomain = splitdomain(url)
-            for qualifiedurl in qualifyurl(thedomain):
+            for qualifiedurl in qualifyurl(
+                thedomain, http_only=args.http_only, https_only=args.https_only):
                 # thehash is None if getsource caught an exception.
-                thehash = parsecontent(getsource(qualifiedurl, cache, args.timeout))
-            thehash = thehash if thehash else 0 # None if not found.
+                decodedsource = getsource(qualifiedurl, cache, args.timeout)
+                if decodedsource is not -1: # We were able to make the request.
+                    thehash = parsecontent(decodedsource)
+                    thehash = thehash if thehash else 0 # None if not found.
+                elif decodedsource is -1: # The request method raised an exception.
+                    thehash = -1
             output = '{},{}\n'.format(thedomain,thehash)
             if not args.quietmode: sys.stdout.write(output)
             outfile.write(output)
