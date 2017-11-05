@@ -156,7 +156,12 @@ class Scanner:
                               disable_ssl_certificate_validation=True)
             response, content = h.request(url)
             statuscode = response.status
-            content = content.decode('utf-8') if content.decode('utf-8') else None
+            try:
+                content = content.decode('utf-8') if content.decode('utf-8') else None
+            except UnicodeDecodeError as decode_err:
+                content = None
+                self.logger.exception('Cannot decode content at url: {}'
+                                 .format(url))
             self.logger.info('target url: {}, received http status code: {}'
                              .format(url, response.status))
             if statuscode is 200:

@@ -130,16 +130,10 @@ def main():
 if __name__ == '__main__':
     main()
 
-    #"""Return a constant of logging level, given an int (0,6],
-    #which bears an inverse correlation to the number of times the
-    #flag was passed as an argument to the script, i.e.,
+    # Logging levels:
     #    0 -> CRITICAL (only)
     #    1 -> ERROR (only)
     #    2 -> WARNING (only)
     #    3 -> INFO (only)
     #    4 -> DEBUG (only)
     #    5 -> NOTSET (only)
-    #"""
-
-
-
