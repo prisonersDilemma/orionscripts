@@ -116,7 +116,9 @@ class Scanner:
         is not found, or the string inside consists of non-alphanumeric
         characters.
         """
-        self.logger.debug('parsecontent: content snippet:\n{}'.format(content[:100]))
+        # Leads to an error when there is no content returned, but a connection
+        # is able to be made, e.g., a decoding error.
+        #self.logger.debug('parsecontent: content snippet:\n{}'.format(content[:100]))
         try:
             # Changed, since I got it working. Could pose a problem. Had to
             # accomodate coinhivehash, and I'm too tired too inspect further.
