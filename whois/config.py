@@ -12,10 +12,9 @@ __package__ = 'whois' # Can I define this globally, along with __version__?
 #
 # Add an option to display all defaults, or, optionally, of a [given] option?
 #===============================================================================
-
 from argparse import (ArgumentParser, RawDescriptionHelpFormatter,)
 from datetime import datetime
-from logging import basicConfig, getLogger
+from logging import basicConfig, getLevelName, getLogger
 from os import getcwd, mkdir
 from os.path import exists, expanduser, splitext
 from yyyymmdd import yesterday
@@ -26,7 +25,7 @@ CONFIGFILE = f'{CONFIGDIR}/{__package__}.conf'
 LOGNAME = f'{__package__}.log'
 LOGFILE = f'{CONFIGDIR}/{LOGNAME}'
 LOGLEVELS = { 'DEBUG':10, 'INFO':20, 'WARNING':30, 'ERROR':40, 'CRITICAL':50 }
-LOG_LEVEL = LOGLEVELS['INFO'] # Use set-option to change, and restart.
+LOG_LEVEL = LOGLEVELS['DEBUG'] # Use set-option to change, and restart.
 SCRIPTHOME = getcwd()
 SCRIPTNAME = splitext(__file__)[0]
 USERHOME = expanduser('~')
@@ -36,13 +35,17 @@ if not exists(CONFIGDIR):
     mkdir(CONFIGDIR)
 #===============================================================================
 # Configure the logger.
+# A second logger is necessary to write to stdout (stream).
 basicConfig(filename=LOGFILE,
-            level=LOG_LEVEL,
+            level=LOG_LEVEL, # defines the root logging level
             format='%(levelname)s: %(asctime)s: %(message)s',
             datefmt='%Y-%m-%d-%H:%M:%S%p',
             filemode='a')
 logger = getLogger(__package__) # __name__?
-logger.debug(f'logging level: {logger.level}')
+logger.setLevel(LOG_LEVEL)
+logger.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+logger.debug(f'logger: Initialized logging_level to: {getLevelName(logger.level)} '
+             f'({logger.level})')
 #===============================================================================
 if not exists(CONFIGFILE):
     with open(CONFIGFILE, mode='x') as conf:
@@ -63,8 +66,9 @@ DEFAULTS = {
     'config_file'   : f'{CONFIGFILE}',
     'database_file' : f'{USERDIR}/whois.db',
     'logging_file'  : f'{CONFIGDIR}/whois.log',
-    'logging_level' : 'WARNING',
+    'logging_level' : f'INFO',
     'nlines'        : 100,
+    'table_name'    : 'master',
 }
 #===============================================================================
 class Options:
@@ -165,6 +169,8 @@ set_option.add_argument('--logging-level', metavar='STR',
     help="Set the level at which whois' will write to its log.")
 set_option.add_argument('--port', type=int, metavar='INT',
     help='Use the given port when connecting to \033[32;1mhostname\033[0m')
+set_option.add_argument('--table-name', metavar='NAME',
+    help='Create the table of the given name in the \033[32;1mdatabase-file\033[0m.')
 set_option.add_argument('--tail-nlines', type=int, metavar='INT', dest='nlines',
     help='Set how many lines to parse from \033[32;1mlog-file\033[0m at once.')
 #===============================================================================
