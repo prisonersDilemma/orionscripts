@@ -10,10 +10,10 @@ from sys import stdout, stderr, exit
 
 from __init__ import *
 import config # Will execute the script during import.
-#from config import *
 
 #===============================================================================
 # Finish processing the args and opts, and create any necessary files.
+
 
 # Parse the config file: '.whois.conf'. Remove the commented lines.
 with open(config.CONFIGFILE, mode='r') as conf:
@@ -22,12 +22,15 @@ CONFIGS = [line for line in CONFIGS if not line.lstrip().startswith('#')]
 CONFIGS = vars(config.set_option.parse_args(CONFIGS)) # ArgumentParser obj -> dict.
 del CONFIGS['func'] # set-option
 
+
 # Explicitly exclude None values, and sanitize any values that may be quoted.
 CONFIGS = {k:v.strip('"\'') for k,v in CONFIGS.items() if v is not None}
 config.ARGS.update(CONFIGS)
 
+
 # Parse command-line args.
 args = config.parser.parse_args()
+
 
 # Explicitly exclude None values.
 config.ARGS.update({k:v for k,v in vars(args).items() if v is not None})
@@ -38,8 +41,15 @@ try:
 except KeyError:
     pass
 
+
 # Create the Namespace.
 opts = config.Options(config.ARGS)
+
+
+# Convert ints that are strings to ints.
+opts.port = int(opts.port)
+opts.bufsz = int(opts.bufsz)
+opts.nlines = int(opts.nlines)
 
 
 # Update the logging-level (if necessary). #config.getLevelName()
@@ -49,14 +59,16 @@ if level and (level != config.logger.level):
     config.logger.info(f'logger: updated logging_level to {opts.logging_level!s} '
                        f'({config.logger.level})')
 
+
 # Indent each option=value when writing to the log, to make it easier to read.
 logopts = ''.join((_.join(['  ', '\n']) for _ in str(opts).splitlines())).rstrip('\n') # strip the last newline.
 config.logger.debug(f'`{__package__}` running with options:\n{logopts}')
 #===============================================================================
+# Begin main program logic.
 
 
 # Assemble targets dict from the Splunk log.
-trgts = gettargets(opts.log_file, opts.date)
+trgts = gettargets(opts.log_file, opts.date, opts.nlines, opts.bufsz)
 config.logger.info(f'trgts found: {len(trgts)}')
 
 
@@ -72,6 +84,7 @@ output_lines = output.splitlines()
 header_line  = output_lines[0]
 config.logger.info(f'presumed header line in the output from `nacat`: {header_line}')
 
+
 for line in output_lines[1:]: # Skip the first line; the header.
     try:
         asn, ipaddr, name_cntry = line.split('|')
@@ -84,8 +97,8 @@ for line in output_lines[1:]: # Skip the first line; the header.
             name = sub(r'(, |,)', ' - ', name)
         except ValueError:
             config.logger.warning(f'Exception raised parsing `nacat` output for '
-                           'secondary values "name", "cntry":\n{line}\n'
-                           'Resorting to defaults.')
+                                  f'secondary values "name", "cntry":\n{line}\n'
+                                  'Resorting to defaults.')
             name = name_cntry if name_cntry else ''
             cntry = ''
 
@@ -100,16 +113,15 @@ for line in output_lines[1:]: # Skip the first line; the header.
 # Daily List. Data is changed daily.
 # Format data. Append to csv.
 # No header, with following format: name - country,ASN,ipaddr,timestamp
-config.logger.info(f'Writing to daily list file: {opts.list_file}')
+config.logger.info(f'Writing to {len(trgts)} lines daily list file: {opts.list_file}')
 with open(opts.list_file, mode='w') as f:
     for trgt in trgts:
-        line = ','.join((
-                         trgts[trgt]['name'],
+        line = ','.join((trgts[trgt]['name'].lstrip(), # a space on the left...
                          trgts[trgt]['country'],
                          trgts[trgt]['ASN'],
                          trgt,
                          trgts[trgt]['timestamp']))
-        config.logger.debug(f'Writing to daily list file: {line}')
+        #config.logger.debug(f'Writing to daily list file: {line}')
         f.write(f'{line}\n')
 
 
@@ -118,6 +130,7 @@ opts.database_file = opts.database_file if opts.database_file.endswith('.db') el
 if not exists(opts.database_file):
     create_database(opts.database_file)
     config.logger.info(f'database: {opts.database_file} created.')
+
 
     # Only create the table if we have data, and make KEYS dynamic, gotten from
     # the data.
@@ -130,21 +143,10 @@ if not exists(opts.database_file):
 # Compose and insert the records (rows) into the database table.
 config.logger.info(f'inserting {len(trgts)} records into table: {opts.table_name}')
 for trgt in trgts:
-    VALUES = (trgts[trgt]['ASN'],
-              trgt,
+    VALUES = (trgt,
+              trgts[trgt]['ASN'],
               trgts[trgt]['name'],
               trgts[trgt]['country'],
               trgts[trgt]['timestamp'])
-    config.logger.debug(f'inserting values: {VALUES}')
+    #config.logger.debug(f'inserting values: {VALUES}')
     insert_record(opts.database_file, VALUES, opts.table_name)
-
-#===============================================================================
-# "MASTER list"
-# Add to master list/database: append to the csv file:  name - cntry,asn,ip,timestamp
-# These are the columns in the master list. Remember, it's comma-separated.
-# So this first part is one column and this column is separated by dashes.
-# ....................
-# ASN / Name / Country,ASN,IP Address ,Date First Seen,ASN Lookup,IP Address Lookup,Country
-#with open(MASTER, mode='a') as m:
-#    m.write()
-#===============================================================================

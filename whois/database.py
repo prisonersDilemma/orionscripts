@@ -9,13 +9,14 @@ def create_database(fpath):
 
 
 def conn_and_exec(**kwargs):
-    conn = connect(kwargs.get('file'))   # Create & open Connection object
-    c = conn.cursor()                            # Create a cursor object
-    stmt = kwargs.get('stmt')
-    vals = kwargs.get('vals', '')                # Empty string if not present
-    c.execute(stmt, vals)                        # Execute the SQL statement
-    conn.commit()                                # Saves changes.
-    conn.close()                                 # Closes the connection
+    with connect(kwargs.get('file')) as conn:
+    #conn = connect(kwargs.get('file'))   # Create & open Connection object
+        c = conn.cursor()                            # Create a cursor object
+        stmt = kwargs.get('stmt')
+        vals = kwargs.get('vals', '')                # Empty string if not present
+        c.execute(stmt, vals)                        # Execute the SQL statement
+        conn.commit()                                # Saves changes.
+    #conn.close()                                 # Closes the connection
 
 def create_table(dbpath, keys, name=None):
     name = name if name else gettablename(dbpath)

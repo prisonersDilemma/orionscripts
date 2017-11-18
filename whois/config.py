@@ -43,7 +43,7 @@ basicConfig(filename=LOGFILE,
             filemode='a')
 logger = getLogger(__package__) # __name__?
 logger.setLevel(LOG_LEVEL)
-logger.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+logger.info('====Begin New Log Entry====')
 logger.debug(f'logger: Initialized logging_level to: {getLevelName(logger.level)} '
              f'({logger.level})')
 #===============================================================================
@@ -132,7 +132,7 @@ parser.add_argument('--list-file', metavar='PATH',
     help='Write the current results to the given path.')
 parser.add_argument('--log-file', metavar='PATH',
     help='Filter for \033[32;1mdate\033[0m at the given path.')
-parser.add_argument('--port', type=int, metavar='INT',
+parser.add_argument('--port', metavar='INT',
     help='Use the given port when connecting to \033[32;1mhostname\033[0m.')
 
 # Display the name like this: 'set[-option]'
@@ -148,7 +148,7 @@ set_option = subparsers.add_parser('set-option', aliases=['set'],
     help='Make changes permanent by writing them to the configuration file.')
 set_option.set_defaults(func=set_option)
 
-set_option.add_argument('--buffer-size', type=int, metavar='INT', dest='bufsz',
+set_option.add_argument('--buffer-size', metavar='INT', dest='bufsz',
     help='Size in bytes (power of 2) to read when tailing \033[32;1mlog-file\033[0m.')
 set_option.add_argument('--config-file', metavar='PATH',
     help="Change the location of  whois' permanent configurations.")
@@ -167,10 +167,10 @@ set_option.add_argument('--logging-file', metavar='PATH',
 set_option.add_argument('--logging-level', metavar='STR',
     choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
     help="Set the level at which whois' will write to its log.")
-set_option.add_argument('--port', type=int, metavar='INT',
+set_option.add_argument('--port', metavar='INT',
     help='Use the given port when connecting to \033[32;1mhostname\033[0m')
 set_option.add_argument('--table-name', metavar='NAME',
     help='Create the table of the given name in the \033[32;1mdatabase-file\033[0m.')
-set_option.add_argument('--tail-nlines', type=int, metavar='INT', dest='nlines',
+set_option.add_argument('--tail-nlines', metavar='INT', dest='nlines',
     help='Set how many lines to parse from \033[32;1mlog-file\033[0m at once.')
 #===============================================================================

@@ -1,5 +1,8 @@
 #!/usr/bin/env python3.6
 
+# Add join the chunk[1:] to remove the first line in each chunk, since it
+# could be a fragment? or leave that up to the calling application?
+
 # Should I be more specific that 'blocks' is 'blocksread', and 'remain' is
 # 'linesremain'?
 
@@ -50,14 +53,25 @@ the file at *fpath*).
 from os import SEEK_END, SEEK_CUR
 from os.path import exists
 
+from logging import basicConfig, getLevelName, getLogger
+
+
+# The logger in config & __main__ was written here, too. And it didn't even
+# write or create the .whois/whois.log
+#basicConfig(filename='.whois/tail.log',
+#            level='DEBUG', # defines the root logging level
+#            format='%(levelname)s: %(asctime)s: %(message)s',
+#            datefmt='%Y-%m-%d-%H:%M:%S%p',
+#            filemode='a')
+#logger = getLogger('tail') # __name__?
+#logger.setLevel('DEBUG')
+#logger.info('====Begin new log entry====')
+
 
 class Tail:
 
     def __init__(self, fpath, nlines=20, bufsz=1024, encoding='utf-8'):
-        assert exists(fpath)
-        assert int(nlines)
-        assert int(bufsz)
-        assert str(encoding)
+        assert exists(fpath) and int(nlines) and int(bufsz) and str(encoding)
         self.fpath = fpath
         self.encoding = encoding
         self.bufsz = bufsz      # how many bytes to read at a time
@@ -70,7 +84,7 @@ class Tail:
 
     def __repr__(self):
         return '{}({})'.format(Tail.__name__,
-                    ', '.join((f'{k}={v}' for k,v in self.__dict__.items())))
+                    ', '.join((f'{k}={v}' for k,v in self.__dict__.items() if k != 'lines')))
 
     def __str__(self):
         # Call next? Not so sure about this, just experimenting.
@@ -93,49 +107,91 @@ class Tail:
 
     def __next__(self):
         with open(self.fpath, mode='rb') as f:
+
             # We've read the whole file. Do any lines remain?
             if self.posn == 0:
+                logger.debug(f'{self!r}')
+
                 if self.remain:
+                    #logger.debug(f'{self!r}')
+
                     self.blocks += 1
+                    #logger.debug(f'{self!r}')
+
                     nxt_chunk_idx = -1 * (self.nlines * self.blocks)
                     prv_chunk_idx = -1 * (self.nlines * (self.blocks - 1))
+                    #logger.debug(f'{self!r}')
                     chunk = self.lines[nxt_chunk_idx:prv_chunk_idx]
+                    #logger.debug(f'{self!r}')
                     self.remain = self.totallines - (self.blocks * len(chunk))
+                    #logger.debug(f'{self!r}')
+
                     # We've gone too far. Return the rest. Raise StopIter next.
                     if abs(nxt_chunk_idx) > self.totallines:
+                        #logger.debug(f'{self!r}')
                         nxt_chunk_idx = 0 # last line (the first in the file)
+                        #logger.debug(f'{self!r}')
                         chunk = self.lines[nxt_chunk_idx:prv_chunk_idx]
+                        #logger.debug(f'{self!r}')
                         self.remain = 0
+                        #logger.debug(f'{self!r}')
+
+                    #logger.debug(f'{self!r}')
                     return b''.join(chunk).decode(self.encoding) # str
+
                 else:
+                    #logger.debug(f'{self!r}')
                     raise StopIteration('the whole file has been consumed.')
 
 
             try:
+
                 if not self.posn: # Once we know our posn, we can use it.
+                    #logger.debug(f'{self!r}')
                     f.seek(-self.bufsz, SEEK_END) # relative posn
+
                 else:
                     self.posn -= self.bufsz
+                    #logger.debug(f'{self!r}')
                     f.seek(self.posn) # 0, whatever os.SEEK for beginning
+                    #logger.debug(f'{self!r}')
+
                 self.posn = f.tell() # Now we know our absolute posn.
+                #logger.debug(f'{self!r}')
+
             except OSError:     # Invalid argument: bufsz > bytes remaining.
+                #logger.debug(f'{self!r}')
                 self.posn = 0   # Start of the file. We've consumed it all.
+                #logger.debug(f'{self!r}')
                 f.seek(self.posn)
+                #logger.debug(f'{self!r}')
 
 
             self.lines = f.readlines()
+            #logger.debug(f'{self!r}')
             self.blocks += 1
+            #logger.debug(f'{self!r}')
 
             if self.totallines >= self.nlines:
+                #logger.debug(f'{self!r}')
+
                 if self.blocks == 1:
+                    #logger.debug(f'{self!r}')
                     chunk = self.lines[-1 * self.nlines:]
+
                 elif self.blocks >= 2: #else:
+                    #logger.debug(f'{self!r}')
                     nxt_chunk_idx = -1 * (self.nlines * self.blocks)
                     prv_chunk_idx = -1 * (self.nlines * (self.blocks - 1))
+                    #logger.debug(f'{self!r}')
                     chunk = self.lines[nxt_chunk_idx:prv_chunk_idx] # prev_chunks+1?
+                    #logger.debug(f'{self!r}')
             else:
                 chunk = self.lines # When nlines > totallines in file.
+                #logger.debug(f'{self!r}')
+
             self.remain = self.totallines - (self.blocks * len(chunk))
+            #logger.debug(f'{self!r}')
             return b''.join(chunk).decode(self.encoding) # str
 
 

@@ -15,7 +15,7 @@ import tail
 import yyyymmdd
 
 
-def gettargets(logfile, trgtdate, nlines=100):
+def gettargets(logfile, trgtdate, nlines, bufsz):
     """Return a dict of the targets matching a given *date* in *logfile*.
     The dict's keys are the IP addresses corresponding to the *date*
     argument, and the values are dicts, with a single key consisting of
@@ -26,9 +26,12 @@ def gettargets(logfile, trgtdate, nlines=100):
     finished = False
     #nchunks = 0 # How many chunks we've processed.
 
-    for chunk in tail.Tail(fpath=logfile, nlines=nlines, bufsz=2048):
+    for chunk in tail.Tail(fpath=logfile, nlines=nlines, bufsz=bufsz):
         #nchunks += 1
-        for line in chunk.splitlines():
+        #print(f'{nchunks} iterations through Tail')
+        #print(f'{len(chunk)} lines in chunk')
+        # Discard the first line, since it may be a fragment.
+        for line in chunk.splitlines()[1:]:
 
             # Good place to log exceptions? There should be a date in every
             # line, except the header (first line). In practice, should only
@@ -36,7 +39,9 @@ def gettargets(logfile, trgtdate, nlines=100):
             # when we call group().
             dateptrns = yyyymmdd.date(line) # re.match object
 
+            # If the line is a fragment, we may not have a date pattern.
             if not dateptrns:
+                #print(f'no date pattern in {line}')
                 finished = True
             else:
                 currdatecomp = yyyymmdd.DateComp(dateptrns.group('date'))
@@ -48,10 +53,12 @@ def gettargets(logfile, trgtdate, nlines=100):
                 # We've gone too far, and have reached dates before trgtdate.
                 # Finish processing the lines in the current chunk and return.
                 elif trgtdatecomp > currdatecomp:
+                    #print('target date is greater than current date')
                     finished = True
 
         # Once we've finished the current chunk of lines.
         if finished:
+            #print('breaking in gettargets')
             break
 
     return trgts
