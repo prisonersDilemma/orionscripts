@@ -9,8 +9,8 @@ are dictionaries with a timestamp key and value.
 
 from logging import getLogger
 
-from . import tail
-from . import yyyymmdd
+from py3mods import tail
+from py3mods import yyyymmdd
 
 #===============================================================================
 logger = getLogger(__name__)
