@@ -5,7 +5,7 @@ dictionary whose keys are the IP addresses found on the given date, and values
 are dictionaries with a timestamp key and value.
 """
 __date__ = '2017-11-15'
-__version__ = (0,1,0)
+__version__ = (0,0,4)
 
 
 from logging import getLogger
@@ -67,7 +67,8 @@ def gettargets(logfile, trgtdate, nlines, bufsz, newline):
 
                 # We've gone too far, and have reached dates before trgtdate.
                 # Finish processing the lines in the current chunk and return.
-                elif trgtdatecomp < currdatecomp:
+
+                elif trgtdatecomp > currdatecomp:
                     logger.debug('Reached an older date (%s) than the target date (%s).',
                                 currdatecomp, trgtdatecomp)
                     logger.debug('Exiting loops after current chunk is finished.')
@@ -88,42 +89,10 @@ def yesterdays_targets(logfile):
 # Alias.
 yesterdays = yesterdays_targets
 
-
-
-@tail.tail._filter
-def gentargets(trgtdate, **kwargs):
-    trgtdatecomp = yyyymmdd.DateComp(trgtdate)
-    for line in kwargs.get('lines'):
-        dateptrns = yyyymmdd.date(line) # re.match object
-        try:
-        #if not dateptrns: raise StopIteration
-            currdatecomp = yyyymmdd.DateComp(dateptrns.group('date'))
-            if trgtdatecomp == currdatecomp:
-                ipaddr, tmstmp = line.split(',')
-                ipaddr, tmstmp = ipaddr.strip('"'), tmstmp.rstrip().strip('"')
-                #targets[ipaddr] = {'timestamp': tmstmp}
-                yield {ipaddr: {'timestamp': tmstmp}}
-            #elif trgtdatecomp < currdatecomp:
-                #logger.debug('Reached an older date (%s) than the target date (%s).', currdatecomp, trgtdatecomp)
-                #logger.debug('Exiting loops after current chunk is finished.')
-                #raise StopIteration
-        except AttributeError: # no date.
-            pass # return? raise StopIteration?
-
-
-trgts = {}
-# Why don't these work?
-#trgts = {dct for gen in gettargets('2017-11-14') for dct in gen}
-#trgts.update(dct for gen in gettargets('2017-11-14') for dct in gen)
-# But this does.
-for gen in gettargets('2017-11-14'):
-    for dct in gen:
-        trgts.update(dct)
-#print(trgts)
-
-
-
 #===============================================================================
 # Changelog:
 # 0.0.1 -- small fix for trgtdatecomp vs currdatecomp to less than.
 # 0.0.2 -- Added generator which uses a new filter function from tail.
+# 0.0.3 -- Reverting change made from 0.0.1, which was a mistake:
+#          if trgtdatecomp > currdatecomp, we've reached a date that precedes
+#          the target date.
