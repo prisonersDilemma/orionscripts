@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.6
 __date__ = '2017-11-15'
-__version__ = (0,1,0)
+__version__ = (0,1,2)
 
 from logging import basicConfig, getLevelName, getLogger
 from re import sub
@@ -14,12 +14,17 @@ from . import database
 from . import nacat
 from . import targets
 
-from py3mods import bytepos
-from py3mods import printables
-from py3mods import tail
-from py3mods import yyyymmdd
+import bytepos
+#import printables
+import tail
+import yyyymmdd
 
 from . import PKGPATH # Python free module-level variable, available to __init__.
+
+# need to add a fix for if no targets found... it assumes there will be a list,
+# and tries to index it, so raises index error
+#
+# also add keyword arg for --date for "yesterday"
 
 
 # Alias.
@@ -27,7 +32,7 @@ opts = argparser.opts
 print(opts)
 
 ## Temporary fix. Creates newline option for Tail.
-#opts += ('newline', b'\r\n')
+#opts += ('newline', '\r\n')
 ##===============================================================================
 ## Create our files.
 ##===============================================================================
@@ -84,8 +89,15 @@ print(opts)
 ## will have all elements. Parse the lines. Normalize the data elements.
 ## Remove duplicates (automatically done by dict.update). Add them to trgts.
 #output_lines = output.splitlines()
-#header_line  = output_lines[0]
-#logger.debug(f'presumed header line in the output from `nacat`: {header_line}')
+#try:
+#   header_line  = output_lines[0]
+#   logger.debug(f'presumed header line in the output from `nacat`: {header_line}')
+#except IndexError:
+#   # We probably couldn't connect since we got nothing in return, so exit and try
+#   # again later (for now).
+#   sys.stderr.write(f'Trouble connecting to {opts.hostname}. Try again later.\n')
+#   sys.exit(-1)
+#
 #
 #
 #for line in output_lines[1:]: # Skip the first line; the header.
@@ -154,6 +166,13 @@ print(opts)
 #              trgts[trgt]['timestamp'])
 #    #logger.debug(f'inserting values: {VALUES}')
 #    database.insert_record(opts.database_file, VALUES, opts.table_name)
+#
+#
+#
+# Notify user of latest results.
+#num_new_targets = len(trgts)
+#print(f'{num_new_targets} targets written to {opts.list_file}.')
+#print(f'{num_new_targets} added to the database: {opts.database_file}.')
 ##===============================================================================
 ## Changes
 ## How can I set debugging level dynamically in other modules, without having
@@ -161,3 +180,6 @@ print(opts)
 ## Changed defaults (the value resorted to when no value) for name, country to
 ## 'NULL' from ''.
 ## Added some comments.
+## Added notifcation to user when finished.
+## Added fix for index error raised when we can't even remove the header from
+## the whois query. Probably means we couldn't connect (connection refused).
